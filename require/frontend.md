@@ -36,56 +36,118 @@ src/
 ## 2. 페이지 구성
 
 ### 2.1 메인 페이지 (`/`)
-**기능**: 프롬프트 입력 및 분석 요청
+**기능**: 프롬프트 입력 및 실시간 결과 표시 (통합 화면)
+
+**디자인 특징**:
+- 헤더/푸터 없는 풀스크린 레이아웃
+- 2단 분할 (입력 50%, 결과 50%)
+- 플로팅 분석 버튼 및 메뉴
 
 **컴포넌트 구성**:
 ```typescript
 // app/page.tsx
-import PromptInput from '@/components/forms/PromptInput'
-import Header from '@/components/layout/Header'
-import Footer from '@/components/layout/Footer'
-import AnalysisButton from '@/components/forms/AnalysisButton'
+'use client'
 
-export default function HomePage() {
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Sparkles, Loader2, AlertCircle } from 'lucide-react'
+import FloatingMenu from '@/src/components/layout/FloatingMenu'
+import { Textarea } from '@/components/ui/Textarea'
+import { env } from '@/lib/env'
+import { cn } from '@/lib/utils'
+
+export default function Home() {
+  const [isLoading, setIsLoading] = useState(false)
+  const [result, setResult] = useState<any>(null)
+  const [prompt, setPrompt] = useState('')
+  const [charCount, setCharCount] = useState(0)
+
+  // 로컬 스토리지 자동 저장
+  useEffect(() => {
+    const savedPrompt = localStorage.getItem('prompt-lens-draft')
+    if (savedPrompt) setPrompt(savedPrompt)
+  }, [])
+
+  useEffect(() => {
+    if (prompt) localStorage.setItem('prompt-lens-draft', prompt)
+  }, [prompt])
+
+  const handleAnalyze = async () => {
+    setIsLoading(true)
+    // API 호출 로직
+    // ...
+    setIsLoading(false)
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <Header />
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <PromptInput />
-          <AnalysisButton />
-        </div>
-      </main>
-      <Footer />
+    <div className="h-screen w-screen overflow-hidden bg-slate-50 flex">
+      {/* Left: Input Section */}
+      <div className="w-1/2 h-full bg-white relative border-r border-slate-200">
+        <Textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="프롬프트를 입력하세요..."
+          className="flex-1 resize-none"
+        />
+
+        {/* Floating Analyze Button */}
+        <button
+          onClick={handleAnalyze}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2
+                     px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600
+                     text-white rounded-full shadow-2xl"
+        >
+          <Sparkles className="w-6 h-6" />
+          프롬프트 분석하기
+        </button>
+      </div>
+
+      {/* Right: Results Section */}
+      <div className="w-1/2 h-full bg-gradient-to-br from-blue-50 via-white to-indigo-50 overflow-auto">
+        {/* 결과 표시 영역 */}
+      </div>
+
+      {/* Floating Menu */}
+      <FloatingMenu />
     </div>
   )
 }
 ```
 
-### 2.2 분석 결과 페이지 (`/analysis`)
-**기능**: 분석 결과 표시 및 개선 제안
+### 2.2 소개 페이지 (`/about`)
+**기능**: 서비스 소개 및 기능 설명
 
 **컴포넌트 구성**:
 ```typescript
-// app/analysis/page.tsx
-import ScoreGauge from '@/components/charts/ScoreGauge'
-import ScoreBreakdown from '@/components/charts/ScoreBreakdown'
-import FeedbackSection from '@/components/ui/FeedbackSection'
-import ImprovedPrompt from '@/components/ui/ImprovedPrompt'
-import BackButton from '@/components/ui/BackButton'
+// app/about/page.tsx
+'use client'
 
-export default function AnalysisPage() {
+import { motion } from 'framer-motion'
+import { Zap, Target, BarChart3, Lightbulb, CheckCircle2 } from 'lucide-react'
+import FloatingMenu from '@/src/components/layout/FloatingMenu'
+import { Card, CardContent } from '@/src/components/ui/Card'
+
+export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-8">
-        <BackButton />
-        <div className="max-w-6xl mx-auto space-y-8">
-          <ScoreGauge />
-          <ScoreBreakdown />
-          <FeedbackSection />
-          <ImprovedPrompt />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <main className="container mx-auto px-4 py-12 md:py-20">
+        {/* Hero Section */}
+        <div className="max-w-4xl mx-auto mb-16 text-center">
+          {/* 서비스 소개 콘텐츠 */}
         </div>
-      </div>
+
+        {/* Features Section */}
+        <div className="max-w-6xl mx-auto">
+          {/* 주요 기능 카드 */}
+        </div>
+
+        {/* How it works */}
+        <div className="max-w-4xl mx-auto mt-20">
+          {/* 사용 방법 안내 */}
+        </div>
+      </main>
+
+      <FloatingMenu />
     </div>
   )
 }
@@ -93,7 +155,98 @@ export default function AnalysisPage() {
 
 ## 3. 컴포넌트 설계
 
-### 3.1 UI 컴포넌트
+### 3.1 레이아웃 컴포넌트
+
+#### FloatingMenu 컴포넌트
+```typescript
+// components/layout/FloatingMenu.tsx
+'use client'
+
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Menu, X, Info, Github, Sparkles } from 'lucide-react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+
+export default function FloatingMenu() {
+  const [isOpen, setIsOpen] = useState(false)
+  const pathname = usePathname()
+
+  return (
+    <>
+      {/* Menu Button - 우측 하단 고정 */}
+      <motion.button
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.5 }}
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed bottom-8 right-8 z-50 w-14 h-14
+                   bg-gradient-to-br from-blue-600 to-indigo-600
+                   text-white rounded-full shadow-2xl
+                   hover:shadow-blue-500/50 transition-all duration-300
+                   flex items-center justify-center hover:scale-110"
+      >
+        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+      </motion.button>
+
+      {/* Menu Panel - 오버레이 없음 */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, x: 100, y: 100 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            exit={{ opacity: 0, x: 100, y: 100 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed bottom-24 right-8 z-50
+                       bg-white rounded-2xl shadow-2xl
+                       border border-slate-200 overflow-hidden"
+          >
+            <div className="flex flex-col min-w-[200px]">
+              <Link href="/" onClick={() => setIsOpen(false)}
+                className={`flex items-center gap-3 px-6 py-4
+                           hover:bg-blue-50 transition-colors group
+                           ${pathname === '/' ? 'bg-blue-50' : ''}`}>
+                <Sparkles className={`w-5 h-5 transition-colors
+                  ${pathname === '/' ? 'text-blue-600' : 'text-slate-600 group-hover:text-blue-600'}`} />
+                <span className={`font-medium transition-colors
+                  ${pathname === '/' ? 'text-blue-600' : 'text-slate-700 group-hover:text-blue-600'}`}>
+                  분석
+                </span>
+              </Link>
+
+              <div className="h-px bg-slate-200" />
+
+              <Link href="/about" onClick={() => setIsOpen(false)}
+                className={`flex items-center gap-3 px-6 py-4
+                           hover:bg-blue-50 transition-colors group
+                           ${pathname === '/about' ? 'bg-blue-50' : ''}`}>
+                <Info className={`w-5 h-5 transition-colors
+                  ${pathname === '/about' ? 'text-blue-600' : 'text-slate-600 group-hover:text-blue-600'}`} />
+                <span className={`font-medium transition-colors
+                  ${pathname === '/about' ? 'text-blue-600' : 'text-slate-700 group-hover:text-blue-600'}`}>
+                  소개
+                </span>
+              </Link>
+
+              <div className="h-px bg-slate-200" />
+
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-3 px-6 py-4 hover:bg-blue-50 transition-colors group">
+                <Github className="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors" />
+                <span className="font-medium text-slate-700 group-hover:text-blue-600 transition-colors">
+                  GitHub
+                </span>
+              </a>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
+```
+
+### 3.2 UI 컴포넌트
 
 #### Button 컴포넌트
 ```typescript
@@ -194,102 +347,53 @@ CardContent.displayName = "CardContent"
 export { Card, CardHeader, CardTitle, CardContent }
 ```
 
-### 3.2 폼 컴포넌트
+### 3.2 입력 컴포넌트
 
-#### PromptInput 컴포넌트
+#### 프롬프트 입력 (메인 페이지 통합)
+메인 페이지에서 직접 Textarea 컴포넌트를 사용하여 라벨 없는 미니멀한 디자인 구현:
+
+**주요 특징**:
+- 별도의 PromptInput 컴포넌트 없이 페이지 레벨에서 상태 관리
+- 라벨 제거, 플레이스홀더만 사용
+- 실시간 글자 수 카운팅 및 유효성 검증
+- 로컬 스토리지 자동 저장
+- 하단 중앙에 플로팅 분석 버튼
+
+**구현**:
 ```typescript
-// components/forms/PromptInput.tsx
-'use client'
+// 메인 페이지 내부에서 직접 구현
+const [prompt, setPrompt] = useState('')
+const [charCount, setCharCount] = useState(0)
 
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { Textarea } from '@/components/ui/Textarea'
-import { Label } from '@/components/ui/Label'
-import { cn } from '@/lib/utils'
+useEffect(() => {
+  setCharCount(prompt.length)
+}, [prompt])
 
-interface PromptFormData {
-  prompt: string
-}
+// 로컬 스토리지 저장/복원
+useEffect(() => {
+  const savedPrompt = localStorage.getItem('prompt-lens-draft')
+  if (savedPrompt) setPrompt(savedPrompt)
+}, [])
 
-interface PromptInputProps {
-  onSubmit: (data: PromptFormData) => void
-  isLoading?: boolean
-}
+useEffect(() => {
+  if (prompt) localStorage.setItem('prompt-lens-draft', prompt)
+}, [prompt])
 
-export default function PromptInput({ onSubmit, isLoading }: PromptInputProps) {
-  const [charCount, setCharCount] = useState(0)
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<PromptFormData>()
+const isInvalid = charCount > 0 && charCount < env.minPromptLength
+const isOverLimit = charCount > env.maxPromptLength
 
-  const promptValue = watch('prompt', '')
-
-  useEffect(() => {
-    setCharCount(promptValue.length)
-  }, [promptValue])
-
-  // 로컬 스토리지 자동 저장
-  useEffect(() => {
-    const savedPrompt = localStorage.getItem('prompt-lens-draft')
-    if (savedPrompt) {
-      // 폼에 저장된 값 복원
-    }
-  }, [])
-
-  useEffect(() => {
-    if (promptValue) {
-      localStorage.setItem('prompt-lens-draft', promptValue)
-    }
-  }, [promptValue])
-
-  const isInvalid = charCount < 10
-  const isOverLimit = charCount > 5000
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="prompt" className="text-lg font-medium">
-          프롬프트를 입력하세요
-        </Label>
-        <Textarea
-          id="prompt"
-          placeholder="분석하고 싶은 프롬프트를 입력하세요..."
-          className={cn(
-            "min-h-[200px] resize-y",
-            isInvalid && "border-red-300 focus:border-red-500",
-            isOverLimit && "border-orange-300 focus:border-orange-500"
-          )}
-          {...register('prompt', {
-            required: '프롬프트를 입력해주세요',
-            minLength: {
-              value: 10,
-              message: '최소 10자 이상 입력해주세요'
-            },
-            maxLength: {
-              value: 5000,
-              message: '최대 5000자까지 입력 가능합니다'
-            }
-          })}
-        />
-        <div className="flex justify-between items-center text-sm">
-          <div className={cn(
-            "text-secondary-600",
-            isInvalid && "text-red-600",
-            isOverLimit && "text-orange-600"
-          )}>
-            {charCount} / 5,000자
-          </div>
-          {isInvalid && (
-            <span className="text-red-600 text-sm">
-              최소 10자 이상 입력해주세요
-            </span>
-          )}
-        </div>
-        {errors.prompt && (
-          <p className="text-red-600 text-sm">{errors.prompt.message}</p>
-        )}
-      </div>
-    </form>
-  )
-}
+// Textarea 렌더링
+<Textarea
+  value={prompt}
+  onChange={(e) => setPrompt(e.target.value)}
+  placeholder="프롬프트를 입력하세요..."
+  className={cn(
+    "flex-1 resize-none text-lg border-0 focus-visible:ring-0",
+    isInvalid && "text-red-600",
+    isOverLimit && "text-orange-600"
+  )}
+  disabled={isLoading}
+/>
 ```
 
 ### 3.3 차트 컴포넌트
@@ -796,6 +900,14 @@ NEXT_PUBLIC_APP_NAME=PromptLens
 
 ---
 
-**문서 버전:** 1.0  
-**최종 수정일:** 2025-01-27  
+**문서 버전:** 1.1
+**최종 수정일:** 2025-10-29
 **작성자:** PromptLens Frontend Team
+
+## 변경 이력
+- **v1.1 (2025-10-29)**:
+  - 메인 페이지 구조 전면 개편 (풀스크린 2단 레이아웃)
+  - FloatingMenu 컴포넌트 추가
+  - PromptInput 컴포넌트 제거 (메인 페이지 통합)
+  - About 페이지 추가
+- **v1.0 (2025-01-27)**: 초기 문서 작성

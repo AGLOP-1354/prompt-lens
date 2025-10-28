@@ -9,10 +9,14 @@
 - **접근성 (Accessibility)**: 모든 사용자가 쉽게 이용할 수 있는 인터페이스
 
 ### 1.2 디자인 원칙
-- **미니멀리즘**: 불필요한 요소 제거, 핵심 기능에 집중
+- **극단적 미니멀리즘**: 전통적인 웹 레이아웃을 벗어난 혁신적 디자인
+  - 헤더/푸터 제거
+  - 라벨 최소화
+  - 플로팅 인터페이스 활용
 - **일관성**: 모든 화면과 컴포넌트에서 통일된 디자인 언어 사용
 - **반응성**: 다양한 디바이스에서 최적화된 경험 제공
-- **직관성**: 사용자가 별도 학습 없이 쉽게 이해할 수 있는 인터페이스
+- **직관성**: 사용자가 별도 학습 없이 즉시 사용 가능한 인터페이스
+- **몰입감**: 풀스크린 레이아웃으로 집중력 극대화
 
 ## 2. 디자인 토큰
 
@@ -318,7 +322,144 @@
 
 ## 4. 레이아웃 시스템
 
-### 4.1 그리드 시스템
+### 4.1 풀스크린 2단 레이아웃
+메인 페이지의 핵심 레이아웃:
+
+```css
+.fullscreen-split-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.left-panel {
+  width: 50%;
+  height: 100%;
+  background: white;
+  border-right: 1px solid var(--secondary-200);
+  position: relative;
+}
+
+.right-panel {
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--primary-50) 0%, white 50%, var(--primary-100) 100%);
+  overflow-y: auto;
+}
+```
+
+### 4.2 플로팅 요소 디자인
+
+#### 플로팅 분석 버튼
+```css
+.floating-analyze-button {
+  position: absolute;
+  bottom: var(--space-8);
+  left: 50%;
+  transform: translateX(-50%);
+
+  padding: var(--space-4) var(--space-8);
+  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  color: white;
+
+  border-radius: 9999px; /* 완전한 둥근 모양 */
+  box-shadow: var(--shadow-2xl);
+
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+
+  transition: all var(--duration-300) var(--ease-out);
+  cursor: pointer;
+}
+
+.floating-analyze-button:hover {
+  transform: translateX(-50%) scale(1.05);
+  box-shadow: 0 30px 60px -15px rgba(14, 165, 233, 0.5);
+}
+
+.floating-analyze-button:active {
+  transform: translateX(-50%) scale(0.95);
+}
+```
+
+#### 플로팅 메뉴 버튼
+```css
+.floating-menu-button {
+  position: fixed;
+  bottom: var(--space-8);
+  right: var(--space-8);
+  z-index: 50;
+
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  color: white;
+
+  border-radius: 50%;
+  box-shadow: var(--shadow-2xl);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: all var(--duration-300) var(--ease-out);
+  cursor: pointer;
+}
+
+.floating-menu-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 25px 50px -12px rgba(14, 165, 233, 0.5);
+}
+```
+
+#### 플로팅 메뉴 패널
+```css
+.floating-menu-panel {
+  position: fixed;
+  bottom: calc(56px + var(--space-8) + var(--space-4));
+  right: var(--space-8);
+  z-index: 50;
+
+  background: white;
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-2xl);
+  border: var(--border-1) solid var(--secondary-200);
+
+  min-width: 200px;
+  overflow: hidden;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+
+  font-weight: var(--font-medium);
+  color: var(--secondary-700);
+
+  transition: background-color var(--duration-200) var(--ease-out);
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  background-color: var(--primary-50);
+  color: var(--primary-600);
+}
+
+.menu-item.active {
+  background-color: var(--primary-50);
+  color: var(--primary-600);
+}
+
+.menu-divider {
+  height: 1px;
+  background-color: var(--secondary-200);
+}
+```
+
+### 4.3 그리드 시스템 (소개 페이지용)
 ```css
 .container {
   max-width: 1200px;
@@ -333,16 +474,53 @@
 
 .grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
 .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-.grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
 ```
 
-### 4.2 반응형 브레이크포인트
+### 4.4 반응형 브레이크포인트
 ```css
 --breakpoint-sm: 640px;
 --breakpoint-md: 768px;
 --breakpoint-lg: 1024px;
 --breakpoint-xl: 1280px;
 --breakpoint-2xl: 1536px;
+```
+
+### 4.5 반응형 레이아웃 조정
+
+#### 데스크톱 (1024px 이상)
+- 2단 레이아웃 유지 (50:50)
+- 모든 플로팅 요소 표시
+
+#### 태블릿 (768px - 1023px)
+- 2단 레이아웃 유지
+- 입력 영역 약간 넓게 (55:45)
+
+#### 모바일 (767px 이하)
+```css
+@media (max-width: 767px) {
+  .fullscreen-split-layout {
+    flex-direction: column;
+  }
+
+  .left-panel,
+  .right-panel {
+    width: 100%;
+    height: 50vh;
+  }
+
+  .floating-analyze-button {
+    padding: var(--space-3) var(--space-6);
+    font-size: var(--text-base);
+  }
+
+  .floating-menu-button {
+    width: 48px;
+    height: 48px;
+    bottom: var(--space-6);
+    right: var(--space-6);
+  }
+}
 ```
 
 ## 5. 접근성 가이드라인
@@ -680,6 +858,14 @@ npm install react-aria react-stately
 
 ---
 
-**문서 버전:** 1.0  
-**최종 수정일:** 2025-01-27  
+**문서 버전:** 1.1
+**최종 수정일:** 2025-10-29
 **작성자:** PromptLens Design Team
+
+## 변경 이력
+- **v1.1 (2025-10-29)**:
+  - 디자인 철학 업데이트 (극단적 미니멀리즘 추가)
+  - 풀스크린 2단 레이아웃 시스템 추가
+  - 플로팅 요소 디자인 가이드 추가
+  - 반응형 레이아웃 조정 가이드 추가
+- **v1.0 (2025-01-27)**: 초기 문서 작성
