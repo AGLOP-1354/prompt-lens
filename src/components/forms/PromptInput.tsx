@@ -54,8 +54,6 @@ export default function PromptInput({ onSubmit, isLoading = false }: PromptInput
     if (onSubmit) {
       onSubmit(data)
     } else {
-      // 기본 동작: 콘솔에 출력
-      console.log('프롬프트 분석:', data)
       alert('프롬프트가 제출되었습니다!\n\n백엔드 연결 후 분석 결과가 표시됩니다.')
     }
   }
