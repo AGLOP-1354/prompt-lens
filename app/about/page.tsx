@@ -1,177 +1,120 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Zap, Target, BarChart3, Lightbulb, CheckCircle2 } from 'lucide-react'
+import { Target, BarChart3, Lightbulb, Zap } from 'lucide-react'
 import FloatingMenu from '@/src/components/layout/FloatingMenu'
-import { Card, CardContent } from '@/src/components/ui/Card'
 
 const features = [
   {
     icon: Target,
     title: '5가지 평가 지표',
-    description: '명확성, 구체성, 구조화, 완전성, 효율성을 종합적으로 분석합니다.',
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
+    description: '명확성, 구체성, 구조화, 완전성, 효율성',
   },
   {
     icon: BarChart3,
-    title: '100점 만점 점수',
-    description: '객관적인 점수와 등급으로 프롬프트 품질을 한눈에 확인하세요.',
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
+    title: '객관적 점수',
+    description: '100점 만점 점수와 등급 제공',
   },
   {
     icon: Lightbulb,
-    title: '구체적인 개선 제안',
-    description: 'AI가 분석한 개선점과 함께 향상된 프롬프트를 제공합니다.',
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-100',
+    title: '개선 제안',
+    description: '실질적인 개선 방향 제시',
   },
   {
     icon: Zap,
-    title: '빠른 분석',
-    description: '5초 이내에 상세한 분석 결과를 받아볼 수 있습니다.',
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
+    title: '즉시 분석',
+    description: '5초 이내 상세 결과',
   },
-]
-
-const benefits = [
-  'AI 응답 품질 향상',
-  '효율적인 토큰 사용',
-  '명확한 의사소통',
-  '시행착오 감소',
 ]
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <main className="container mx-auto px-4 py-12 md:py-20">
-        {/* Hero Section */}
-        <div className="max-w-4xl mx-auto mb-16 text-center">
+    <div className="h-screen w-screen overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex">
+      <div className="w-full h-full overflow-y-auto">
+        <div className="min-h-screen flex flex-col items-center justify-center px-8 py-20">
+          {/* Hero Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="space-y-6"
+            className="max-w-5xl mx-auto text-center mb-20"
           >
-            <h1 className="text-4xl md:text-6xl font-bold text-slate-900 leading-tight">
-              AI 프롬프트의 품질을
-              <br />
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text">
-                객관적으로 평가하세요
-              </span>
+            <h1 className="text-6xl md:text-7xl font-bold text-slate-900 leading-tight mb-6">
+              PromptLens
             </h1>
-            <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto">
-              PromptLens는 여러분의 프롬프트를 다각도로 분석하고,
-              <br className="hidden md:block" />
-              실질적인 개선 방향을 제시하는 AI 분석 도구입니다.
+            <p className="text-2xl md:text-3xl text-slate-600 mb-4">
+              AI 프롬프트를 객관적으로 평가하세요
+            </p>
+            <p className="text-lg text-slate-500 max-w-2xl mx-auto">
+              다각도 분석과 실질적인 개선 방향 제시
             </p>
           </motion.div>
 
-          {/* Benefits */}
+          {/* Features Grid */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="flex flex-wrap justify-center gap-4 mt-8"
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto mb-20"
           >
-            {benefits.map((benefit, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200"
-              >
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-slate-700">{benefit}</span>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-
-        {/* Features Section */}
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              왜 PromptLens인가요?
-            </h2>
-            <p className="text-lg text-slate-600">
-              프롬프트 엔지니어링의 모든 핵심 요소를 한 번에 분석합니다.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 + index * 0.1, duration: 0.6 }}
+                transition={{ delay: 0.4 + index * 0.1, duration: 0.6 }}
+                className="text-center"
               >
-                <Card className="h-full hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                  <CardContent className="p-6">
-                    <div className={`${feature.bgColor} ${feature.color} w-12 h-12 rounded-lg flex items-center justify-center mb-4`}>
-                      <feature.icon className="w-6 h-6" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-slate-900 mb-2">
-                      {feature.title}
-                    </h3>
-                    <p className="text-slate-600 leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+                  <feature.icon className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-slate-600">
+                  {feature.description}
+                </p>
               </motion.div>
             ))}
-          </div>
-        </div>
+          </motion.div>
 
-        {/* How it works */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9, duration: 0.6 }}
-          className="max-w-4xl mx-auto mt-20"
-        >
-          <Card className="bg-gradient-to-br from-blue-600 to-indigo-600 border-0 shadow-2xl">
-            <CardContent className="p-8 md:p-12 text-center text-white">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                사용 방법
+          {/* How it Works */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+            className="max-w-4xl mx-auto"
+          >
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-12 text-center">
+              <h2 className="text-3xl font-bold text-slate-900 mb-8">
+                간단한 3단계
               </h2>
-              <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-                프롬프트를 입력하고 분석 버튼을 누르기만 하면,
-                3-5초 안에 상세한 분석 결과를 받아볼 수 있습니다.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <div className="flex items-center gap-3 text-blue-100">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold">
+              <div className="flex flex-col md:flex-row gap-8 justify-center items-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xl">
                     1
                   </div>
-                  <span>프롬프트 입력</span>
+                  <span className="text-slate-700 font-medium">프롬프트 입력</span>
                 </div>
-                <div className="hidden sm:block text-blue-300">→</div>
-                <div className="flex items-center gap-3 text-blue-100">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold">
+                <div className="hidden md:block text-slate-300 text-2xl">→</div>
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xl">
                     2
                   </div>
-                  <span>분석 실행</span>
+                  <span className="text-slate-700 font-medium">분석 실행</span>
                 </div>
-                <div className="hidden sm:block text-blue-300">→</div>
-                <div className="flex items-center gap-3 text-blue-100">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold">
+                <div className="hidden md:block text-slate-300 text-2xl">→</div>
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xl">
                     3
                   </div>
-                  <span>결과 확인</span>
+                  <span className="text-slate-700 font-medium">결과 확인</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </main>
+            </div>
+          </motion.div>
+        </div>
+      </div>
 
       <FloatingMenu />
     </div>

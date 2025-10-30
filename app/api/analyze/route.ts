@@ -49,26 +49,61 @@ function parseAnalysisResult(content: string): AnalysisResult {
   }
 
   // 2. JSON 객체 추출 시도 (중괄호 기반)
-  const jsonObjectMatch = jsonContent.match(/\{[\s\S]*\}/)
-  if (jsonObjectMatch) {
-    jsonContent = jsonObjectMatch[0]
+  const firstBraceIdx = jsonContent.indexOf('{')
+  const lastBraceIdx = jsonContent.lastIndexOf('}')
+  if (firstBraceIdx !== -1) {
+    if (lastBraceIdx !== -1 && lastBraceIdx > firstBraceIdx) {
+      jsonContent = jsonContent.slice(firstBraceIdx, lastBraceIdx + 1)
+    } else {
+      // 닫는 중괄호가 누락된 경우: 시작 중괄호부터 끝까지 잘라낸 후 밸런스 맞추기
+      jsonContent = jsonContent.slice(firstBraceIdx)
+      const openCount = (jsonContent.match(/\{/g) || []).length
+      const closeCount = (jsonContent.match(/\}/g) || []).length
+      const missing = Math.max(0, openCount - closeCount)
+      if (missing > 0) {
+        jsonContent = jsonContent + '}'.repeat(missing)
+      }
+    }
   }
 
-  // 3. 특수 문자 정리
+  // 3. 특수 문자 및 흔한 문법 오류 정리
   jsonContent = jsonContent
-    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // 제어 문자 제거
+    // 스마트 따옴표를 일반 따옴표로
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    // 제어 문자 제거
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+    // 배열/객체 닫힘 앞의 트레일링 콤마 제거
+    .replace(/,(\s*[}\]])/g, '$1')
     .trim()
 
   try {
     const parsed = JSON.parse(jsonContent)
 
-    // 필수 필드 검증
-    if (!parsed.overall_score || !parsed.grade || !parsed.scores || !parsed.feedback) {
+    // 필수 필드 검증 (overall_score와 grade는 항상 필요)
+    if (parsed.overall_score === undefined || !parsed.grade || !parsed.scores) {
       console.error('필수 필드 누락:', {
-        hasOverallScore: !!parsed.overall_score,
+        hasOverallScore: parsed.overall_score !== undefined,
         hasGrade: !!parsed.grade,
         hasScores: !!parsed.scores,
+      })
+      throw new Error('분석 결과가 올바른 형식이 아닙니다.')
+    }
+
+    // 무효한 프롬프트 (-404)인 경우 error_message만 확인
+    if (parsed.overall_score === -404) {
+      if (!parsed.error_message) {
+        console.error('무효한 프롬프트이지만 error_message가 없습니다.')
+        throw new Error('무효한 프롬프트에 대한 사유가 없습니다.')
+      }
+      return parsed as AnalysisResult
+    }
+
+    // 유효한 프롬프트인 경우 feedback과 summary 확인
+    if (!parsed.feedback || !parsed.summary) {
+      console.error('유효한 프롬프트이지만 필수 필드 누락:', {
         hasFeedback: !!parsed.feedback,
+        hasSummary: !!parsed.summary,
       })
       throw new Error('분석 결과가 올바른 형식이 아닙니다.')
     }

@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, Loader2, AlertCircle, CheckCircle2, AlertTriangle, Lightbulb, TrendingUp, Copy, Check, Trophy } from 'lucide-react'
+import { Sparkles, Loader2, AlertCircle, CheckCircle2, AlertTriangle, Lightbulb, TrendingUp, Copy, Check, Trophy, XCircle, BookmarkPlus } from 'lucide-react'
 import FloatingMenu from '@/src/components/layout/FloatingMenu'
 import { Textarea } from '@/components/ui/Textarea'
 import { env } from '@/lib/env'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/src/context/AuthProvider'
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
@@ -14,6 +15,7 @@ export default function Home() {
   const [prompt, setPrompt] = useState('')
   const [charCount, setCharCount] = useState(0)
   const [isCopied, setIsCopied] = useState(false)
+  const { user, openLoginModal } = useAuth()
 
   useEffect(() => {
     setCharCount(prompt.length)
@@ -43,6 +45,15 @@ export default function Home() {
     } catch (error) {
       console.error('복사 실패:', error)
     }
+  }
+
+  const handleSaveResult = () => {
+    if (!user) {
+      openLoginModal()
+      return
+    }
+    // TODO: 로그인 유저 저장 로직은 이후 API 연결 시 구현
+    alert('저장 기능은 곧 연결됩니다.')
   }
 
   const handleAnalyze = async () => {
@@ -261,18 +272,83 @@ export default function Home() {
               </motion.div>
             </div>
           ) : result ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
-            >
-              {/* Compact Score Overview */}
+            result.overall_score === -404 ? (
+              // Invalid Prompt Warning
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-white rounded-xl shadow border border-slate-200 p-6"
+                className="flex items-center justify-center h-full"
               >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="max-w-2xl w-full"
+                >
+                  <div className="bg-gradient-to-br from-red-50 via-orange-50 to-red-50 rounded-2xl border-2 border-red-300 p-10">
+                    <div className="flex items-center justify-center mb-6">
+                      <motion.div
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ delay: 0.3, type: 'spring', duration: 0.8 }}
+                        className="bg-red-100 rounded-full p-6"
+                      >
+                        <XCircle className="w-20 h-20 text-red-600" />
+                      </motion.div>
+                    </div>
+
+                    <h2 className="text-3xl font-bold text-red-900 text-center mb-4">
+                      분석할 수 없는 프롬프트입니다
+                    </h2>
+
+                    <div className="bg-white/80 rounded-xl p-6 mb-6 border border-red-200">
+                      <h3 className="text-lg font-semibold text-red-800 mb-3 flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5" />
+                        사유
+                      </h3>
+                      <p className="text-red-900 leading-relaxed">
+                        {result.error_message || '프롬프트가 유효하지 않습니다.'}
+                      </p>
+                    </div>
+
+                    <div className="space-y-3 text-red-800">
+                      <p className="font-semibold">올바른 프롬프트 작성 가이드:</p>
+                      <ul className="space-y-2 ml-4">
+                        <li className="flex items-start gap-2">
+                          <span className="text-red-600 mt-1">•</span>
+                          <span>AI에게 요청할 명확한 작업이나 질문을 작성하세요</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-red-600 mt-1">•</span>
+                          <span>의미 있는 단어와 문장으로 구성하세요</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-red-600 mt-1">•</span>
+                          <span>욕설, 혐오 표현, 부적절한 내용을 포함하지 마세요</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-red-600 mt-1">•</span>
+                          <span>구체적인 맥락과 목적을 포함하세요</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            ) : (
+              // Valid Prompt Results
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-6"
+              >
+                {/* Compact Score Overview */}
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-white rounded-xl shadow border border-slate-200 p-6"
+                >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-4">
                     <motion.div
@@ -288,6 +364,15 @@ export default function Home() {
                       <div className="text-lg font-semibold text-slate-700">{result.grade}</div>
                     </div>
                   </div>
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={handleSaveResult}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium"
+                  >
+                    <BookmarkPlus className="w-4 h-4 text-blue-600" />
+                    저장하기
+                  </motion.button>
                 </div>
 
                 {/* Compact Scores Grid */}
@@ -326,32 +411,35 @@ export default function Home() {
               </motion.div>
 
               {/* Overall Assessment */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="bg-white rounded-xl shadow border border-slate-200 p-6"
-              >
-                <h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-blue-600" />
-                  종합 평가
-                </h3>
-                <p className="text-slate-700 leading-relaxed">{result.summary.overall_assessment}</p>
-              </motion.div>
+              {result.summary && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-white rounded-xl shadow border border-slate-200 p-6"
+                >
+                  <h3 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-blue-600" />
+                    종합 평가
+                  </h3>
+                  <p className="text-slate-700 leading-relaxed">{result.summary.overall_assessment}</p>
+                </motion.div>
+              )}
 
               {/* Key Strengths */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="bg-white rounded-xl shadow border border-slate-200 p-6"
-              >
-                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                  잘한 부분
-                </h3>
-                <ul className="space-y-2">
-                  {result.summary.key_strengths.map((strength: string, index: number) => (
+              {result.summary && result.summary.key_strengths && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="bg-white rounded-xl shadow border border-slate-200 p-6"
+                >
+                  <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    잘한 부분
+                  </h3>
+                  <ul className="space-y-2">
+                    {result.summary.key_strengths.map((strength: string, index: number) => (
                     <motion.li
                       key={index}
                       initial={{ opacity: 0, x: -10 }}
@@ -363,11 +451,12 @@ export default function Home() {
                       <span>{strength}</span>
                     </motion.li>
                   ))}
-                </ul>
-              </motion.div>
+                  </ul>
+                </motion.div>
+              )}
 
               {/* Perfect Prompt Praise - 개선점이 없을 때만 표시 */}
-              {(!result.summary.priority_improvements || result.summary.priority_improvements.length === 0) &&
+              {result.summary && (!result.summary.priority_improvements || result.summary.priority_improvements.length === 0) &&
                (!result.summary.action_items || result.summary.action_items.length === 0) &&
                !result.improved_prompt && (
                 <motion.div
@@ -396,7 +485,7 @@ export default function Home() {
               )}
 
               {/* Priority Improvements - 개선점이 있을 때만 표시 */}
-              {result.summary.priority_improvements && result.summary.priority_improvements.length > 0 && (
+              {result.summary && result.summary.priority_improvements && result.summary.priority_improvements.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -425,7 +514,7 @@ export default function Home() {
               )}
 
               {/* Action Items - 개선점이 있을 때만 표시 */}
-              {result.summary.action_items && result.summary.action_items.length > 0 && (
+              {result.summary && result.summary.action_items && result.summary.action_items.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -519,7 +608,8 @@ export default function Home() {
                   </div>
                 </motion.div>
               )}
-            </motion.div>
+              </motion.div>
+            )
           ) : (
             <div className="flex flex-col items-center justify-center h-full">
               <motion.div

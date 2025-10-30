@@ -1,6 +1,6 @@
 // 분석 결과 타입 정의
 
-export type ScoreGrade = 'Excellent' | 'Good' | 'Fair' | 'Poor' | 'Very Poor'
+export type ScoreGrade = 'Excellent' | 'Good' | 'Fair' | 'Poor' | 'Very Poor' | 'Invalid'
 
 export interface ScoreBreakdown {
   clarity: number
@@ -40,12 +40,13 @@ export interface ImprovedPrompt {
 }
 
 export interface AnalysisResult {
-  overall_score: number
+  overall_score: number // -404 = 무효한 프롬프트, 0-100 = 유효한 프롬프트
   grade: ScoreGrade
   scores: ScoreBreakdown
-  feedback: FeedbackBreakdown
-  summary: AnalysisSummary
-  improved_prompt?: ImprovedPrompt // Optional: 개선이 필요 없으면 생략
+  feedback?: FeedbackBreakdown // Optional: 무효한 프롬프트면 null
+  summary?: AnalysisSummary // Optional: 무효한 프롬프트면 null
+  improved_prompt?: ImprovedPrompt // Optional: 개선이 필요 없거나 무효한 프롬프트면 생략
+  error_message?: string // Optional: 무효한 프롬프트일 때 사유
 }
 
 export interface AnalyzeRequest {
