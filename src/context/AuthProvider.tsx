@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
+
 import { getSupabaseClient } from '@/src/lib/supabaseClient'
 import { env } from '@/src/lib/env'
 
@@ -13,20 +14,20 @@ type AuthContextValue = {
   isLoading: boolean
   signInWithOAuth: (provider: OAuthProvider) => Promise<void>
   signOut: () => Promise<void>
-  // 로그인 모달 제어
   isLoginModalOpen: boolean
-  openLoginModal: () => void
+  openLoginModal: (onLoginSuccess?: () => void) => void
   closeLoginModal: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const supabase = getSupabaseClient()
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false)
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
 
   useEffect(() => {
     let mounted = true
@@ -41,9 +42,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })()
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession)
       setUser(newSession?.user ?? null)
+
+      if (event === 'SIGNED_IN' && newSession && pendingAction) {
+        setIsLoginModalOpen(false)
+        setTimeout(() => {
+          pendingAction()
+          setPendingAction(null)
+        }, 100)
+      }
     })
 
     return () => {
@@ -57,7 +66,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider,
       options: {
         redirectTo: env.oauthRedirectUrl,
-        // Kakao는 기본 scope로 충분. 필요 시 추가: 'profile_nickname', 'account_email' 등
         queryParams: provider === 'google' ? { prompt: 'select_account' } : undefined,
       },
     })
@@ -67,8 +75,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut()
   }, [supabase])
 
-  const openLoginModal = useCallback(() => setIsLoginModalOpen(true), [])
-  const closeLoginModal = useCallback(() => setIsLoginModalOpen(false), [])
+  const openLoginModal = useCallback((onLoginSuccess?: () => void) => {
+    setIsLoginModalOpen(true)
+    if (onLoginSuccess) {
+      setPendingAction(() => onLoginSuccess)
+    }
+  }, [])
+
+  const closeLoginModal = useCallback(() => {
+    setIsLoginModalOpen(false)
+    setPendingAction(null)
+  }, [])
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
@@ -88,10 +105,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function useAuth() {
+const useAuth = () => {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth must be used within AuthProvider')
   return ctx
 }
 
-
+export { AuthProvider, useAuth }
