@@ -61,7 +61,10 @@ const Home = () => {
   }, [])
 
   useEffect(() => {
-    if (!user) return
+    if (!user) {
+      apiClient.post('/api/anon/log', { event: 'visit', metadata: { path: '/' } }).catch(() => {})
+      return
+    }
     const pending = localStorage.getItem('prompt-lens-pending-save')
     if (pending === '1') {
       localStorage.removeItem('prompt-lens-pending-save')

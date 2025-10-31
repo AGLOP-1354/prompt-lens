@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { callSolarAPI } from '@/src/lib/solar'
+import { headers, cookies } from 'next/headers'
+import { createSupabaseAdminClient } from '@/src/lib/supabaseServer'
 import { ANALYZER_SYSTEM_PROMPT, createAnalysisPrompt } from '@/src/lib/prompts/analyzer'
 import type { AnalyzeRequest, AnalyzeResponse, AnalysisResult } from '@/src/types/analysis'
 
@@ -215,6 +217,26 @@ const POST = async (request: NextRequest) => {
     )
 
     const analysisResult = parseAnalysisResult(response)
+
+    // 비로그인 익명 분석 요청 로깅 (프롬프트 원문은 저장하지 않음)
+    try {
+      const hdrs = await headers()
+      const cookieStore = await cookies()
+      const anon = cookieStore.get('pl_anon')?.value || null
+      if (!anon) {
+        // identify는 /api/anon/log에서 처리되므로 여기서는 토큰이 없으면 생성하지 않음
+      }
+      const admin = createSupabaseAdminClient()
+      await admin.from('anonymous_events').insert({
+        anon_token: anon || crypto.randomUUID(),
+        event: 'analyze_request',
+        metadata: { prompt_length: prompt.length },
+        ip: hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || null,
+        user_agent: hdrs.get('user-agent') || null,
+      })
+    } catch (e) {
+      // 로깅 실패는 앱 동작에 영향 주지 않음
+    }
 
     return NextResponse.json<AnalyzeResponse>(
       {
