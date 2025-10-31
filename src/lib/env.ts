@@ -1,8 +1,3 @@
-/**
- * 환경변수 헬퍼
- * 타입 안전한 환경변수 접근을 제공합니다.
- */
-
 export const env = {
   // 앱 설정
   appName: process.env.NEXT_PUBLIC_APP_NAME || 'PromptLens',
