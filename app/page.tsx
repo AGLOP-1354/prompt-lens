@@ -3,18 +3,22 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Loader2, AlertCircle, CheckCircle2, AlertTriangle, Lightbulb, TrendingUp, Copy, Check, Trophy, XCircle, BookmarkPlus } from 'lucide-react'
-import FloatingMenu from '@/src/components/layout/FloatingMenu'
-import { Textarea } from '@/components/ui/Textarea'
+
 import { env } from '@/lib/env'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/src/context/AuthProvider'
+import Notification from '@/src/components/ui/Notification'
+import FloatingMenu from '@/src/components/layout/FloatingMenu'
+import { Textarea } from '@/components/ui/Textarea'
+import type { AnalysisResult } from '@/src/types/analysis'
 
-export default function Home() {
+const Home = () => {
   const [isLoading, setIsLoading] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<AnalysisResult | null>(null)
   const [prompt, setPrompt] = useState('')
   const [charCount, setCharCount] = useState(0)
   const [isCopied, setIsCopied] = useState(false)
+  const [showNotification, setShowNotification] = useState(false)
   const { user, openLoginModal } = useAuth()
 
   useEffect(() => {
@@ -47,13 +51,78 @@ export default function Home() {
     }
   }
 
-  const handleSaveResult = () => {
+  const handleSaveResult = async () => {
     if (!user) {
-      openLoginModal()
+      openLoginModal(() => handleSaveResult())
       return
     }
-    // TODO: 로그인 유저 저장 로직은 이후 API 연결 시 구현
-    alert('저장 기능은 곧 연결됩니다.')
+
+    if (!result || !prompt) {
+      alert('저장할 데이터가 없습니다.')
+      return
+    }
+
+    try {
+      const historyPayload = {
+        original_prompt: prompt,
+        overall_score: result.overall_score,
+        grade: result.grade,
+        clarity_score: result.scores.clarity,
+        specificity_score: result.scores.specificity,
+        structure_score: result.scores.structure,
+        completeness_score: result.scores.completeness,
+        efficiency_score: result.scores.efficiency,
+        summary: result.summary,
+        improved_prompt: result.improved_prompt?.text,
+        improvements: result.improved_prompt
+          ? {
+              changes: result.improved_prompt.changes,
+              expected_score_improvement: result.improved_prompt.expected_score_improvement,
+            }
+          : undefined,
+      }
+
+      const historyRes = await fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(historyPayload),
+      })
+
+      if (!historyRes.ok) {
+        throw new Error('분석 기록 저장 실패')
+      }
+
+      const shouldSavePrompt = confirm('프롬프트도 함께 저장하시겠습니까?')
+
+      if (shouldSavePrompt) {
+        const title = window.prompt('프롬프트 제목을 입력하세요:', prompt.slice(0, 50))
+        if (title) {
+          const promptPayload = {
+            title,
+            content: prompt,
+            tags: [],
+            is_favorite: false,
+          }
+
+          const promptRes = await fetch('/api/prompts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(promptPayload),
+          })
+
+          if (!promptRes.ok) {
+            throw new Error('프롬프트 저장 실패')
+          }
+
+          setShowNotification(true)
+        }
+      } else {
+        setShowNotification(true)
+      }
+    } catch (error) {
+      console.error('저장 오류:', error)
+      alert('저장 중 오류가 발생했습니다.')
+    }
   }
 
   const handleAnalyze = async () => {
@@ -77,12 +146,10 @@ export default function Home() {
         throw new Error(data.error || '분석 중 오류가 발생했습니다.')
       }
 
-      // 결과 설정
       setResult(data.data)
     } catch (error) {
       console.error('분석 오류:', error)
 
-      // 사용자 친화적인 에러 메시지
       let errorMessage = '분석 중 오류가 발생했습니다.'
 
       if (error instanceof Error) {
@@ -103,7 +170,6 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-slate-50 flex">
-      {/* Left: Input Section */}
       <motion.div
         initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
@@ -123,7 +189,6 @@ export default function Home() {
             disabled={isLoading}
           />
 
-          {/* Character Count - Floating */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -165,9 +230,13 @@ export default function Home() {
               )}
             </AnimatePresence>
           </motion.div>
+
+          {/* subtle helper */}
+          <p className="mt-2 text-xs text-slate-400">
+            명확한 목적, 필요한 맥락, 기대 출력 형식을 함께 적어주세요.
+          </p>
         </div>
 
-        {/* Floating Analyze Button */}
         <motion.button
           initial={{ opacity: 0, y: 100 }}
           animate={{ opacity: 1, y: 0 }}
@@ -176,7 +245,7 @@ export default function Home() {
           whileTap={{ scale: 0.95 }}
           onClick={handleAnalyze}
           disabled={isLoading || isInvalid || isOverLimit || charCount === 0}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-3 font-semibold text-lg"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 px-7 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2.5 font-semibold text-base"
         >
           {isLoading ? (
             <>
@@ -192,7 +261,6 @@ export default function Home() {
         </motion.button>
       </motion.div>
 
-      {/* Right: Results Section */}
       <motion.div
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
@@ -202,32 +270,27 @@ export default function Home() {
         <div className="h-full p-8">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-full">
-              {/* 개선된 로딩 애니메이션 */}
               <motion.div
                 className="relative"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
               >
-                {/* 외부 원 */}
                 <motion.div
                   className="w-24 h-24 rounded-full border-4 border-blue-200"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
                 />
-                {/* 내부 회전 원 */}
                 <motion.div
                   className="absolute top-0 left-0 w-24 h-24 rounded-full border-t-4 border-blue-600"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 />
-                {/* 중앙 아이콘 */}
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                   <Sparkles className="w-8 h-8 text-blue-600" />
                 </div>
               </motion.div>
 
-              {/* 로딩 텍스트 애니메이션 */}
               <motion.div
                 className="mt-8 space-y-2"
                 initial={{ opacity: 0, y: 10 }}
@@ -246,7 +309,6 @@ export default function Home() {
                 </motion.p>
               </motion.div>
 
-              {/* 진행 단계 표시 */}
               <motion.div
                 className="mt-8 space-y-2 w-full max-w-md"
                 initial={{ opacity: 0 }}
@@ -273,7 +335,6 @@ export default function Home() {
             </div>
           ) : result ? (
             result.overall_score === -404 ? (
-              // Invalid Prompt Warning
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -560,7 +621,7 @@ export default function Home() {
                         +{result.improved_prompt.expected_score_improvement}점 향상 예상
                       </span>
                       <motion.button
-                        onClick={() => handleCopyPrompt(result.improved_prompt.text)}
+                        onClick={() => handleCopyPrompt(result.improved_prompt?.text || '')}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
@@ -630,8 +691,17 @@ export default function Home() {
         </div>
       </motion.div>
 
-      {/* Floating Menu */}
       <FloatingMenu />
+
+      <Notification
+        show={showNotification}
+        message="저장이 성공했습니다!"
+        linkText="확인하러 가기"
+        linkHref="/history"
+        onClose={() => setShowNotification(false)}
+      />
     </div>
   )
 }
+
+export default Home
