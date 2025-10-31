@@ -2,28 +2,46 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Info, Github, Sparkles } from 'lucide-react'
+import { Menu, X, Info, Github, Sparkles, BookmarkPlus, History, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-export default function FloatingMenu() {
+import { useAuth } from '@/src/context/AuthProvider'
+
+const FloatingMenu = () => {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const { user } = useAuth()
+
+  const isNewUser = user && user.created_at
+    ? (new Date().getTime() - new Date(user.created_at).getTime()) < 24 * 60 * 60 * 1000
+    : false
 
   return (
     <>
-      {/* Menu Button */}
-      <motion.button
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.5 }}
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-8 right-8 z-50 w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-full shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center group hover:scale-110"
-      >
-        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </motion.button>
+      <div className="fixed bottom-8 right-8 z-50">
+        <motion.button
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.5 }}
+          onClick={() => setIsOpen(!isOpen)}
+          className="relative w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-full shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center group hover:scale-110"
+        >
+          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
 
-      {/* Menu Items */}
+          {isNewUser && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.7, type: 'spring', stiffness: 500 }}
+              className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg"
+            >
+              N
+            </motion.div>
+          )}
+        </motion.button>
+      </div>
+
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -50,6 +68,63 @@ export default function FloatingMenu() {
                     분석
                   </span>
                 </Link>
+
+                {user && (
+                  <>
+                    <div className="h-px bg-slate-200" />
+                    <Link
+                      href="/saved"
+                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center gap-3 px-6 py-4 hover:bg-blue-50 transition-colors group ${
+                        pathname === '/saved' ? 'bg-blue-50' : ''
+                      }`}
+                    >
+                      <BookmarkPlus className={`w-5 h-5 transition-colors ${
+                        pathname === '/saved' ? 'text-blue-600' : 'text-slate-600 group-hover:text-blue-600'
+                      }`} />
+                      <span className={`font-medium transition-colors ${
+                        pathname === '/saved' ? 'text-blue-600' : 'text-slate-700 group-hover:text-blue-600'
+                      }`}>
+                        저장한 프롬프트
+                      </span>
+                    </Link>
+                    <div className="h-px bg-slate-200" />
+                    <Link
+                      href="/history"
+                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center gap-3 px-6 py-4 hover:bg-blue-50 transition-colors group ${
+                        pathname === '/history' ? 'bg-blue-50' : ''
+                      }`}
+                    >
+                      <History className={`w-5 h-5 transition-colors ${
+                        pathname === '/history' ? 'text-blue-600' : 'text-slate-600 group-hover:text-blue-600'
+                      }`} />
+                      <span className={`font-medium transition-colors ${
+                        pathname === '/history' ? 'text-blue-600' : 'text-slate-700 group-hover:text-blue-600'
+                      }`}>
+                        분석 기록
+                      </span>
+                    </Link>
+                    <div className="h-px bg-slate-200" />
+                    <Link
+                      href="/settings"
+                      onClick={() => setIsOpen(false)}
+                      className={`flex items-center gap-3 px-6 py-4 hover:bg-blue-50 transition-colors group ${
+                        pathname === '/settings' ? 'bg-blue-50' : ''
+                      }`}
+                    >
+                      <Settings className={`w-5 h-5 transition-colors ${
+                        pathname === '/settings' ? 'text-blue-600' : 'text-slate-600 group-hover:text-blue-600'
+                      }`} />
+                      <span className={`font-medium transition-colors ${
+                        pathname === '/settings' ? 'text-blue-600' : 'text-slate-700 group-hover:text-blue-600'
+                      }`}>
+                        설정
+                      </span>
+                    </Link>
+                  </>
+                )}
+
                 <div className="h-px bg-slate-200" />
                 <Link
                   href="/about"
@@ -86,3 +161,5 @@ export default function FloatingMenu() {
     </>
   )
 }
+
+export default FloatingMenu

@@ -3,7 +3,7 @@
 import { Heart } from 'lucide-react'
 import { motion } from 'framer-motion'
 
-export default function Footer() {
+const Footer = () => {
   return (
     <motion.footer
       initial={{ opacity: 0 }}
@@ -54,3 +54,5 @@ export default function Footer() {
     </motion.footer>
   )
 }
+
+export default Footer

@@ -3,7 +3,7 @@
 import { AuthProvider } from '@/src/context/AuthProvider'
 import AuthModal from '@/src/components/ui/AuthModal'
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+const Providers = ({ children }: { children: React.ReactNode }) => {
   return (
     <AuthProvider>
       {children}
@@ -12,4 +12,4 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   )
 }
 
-
+export default Providers

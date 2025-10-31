@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-export default function Header() {
+const Header = () => {
   const pathname = usePathname()
 
   return (
@@ -67,3 +67,5 @@ export default function Header() {
     </motion.header>
   )
 }
+
+export default Header

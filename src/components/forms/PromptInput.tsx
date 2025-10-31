@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
+import { Sparkles, AlertCircle, Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+
 import { Textarea } from '@/components/ui/Textarea'
 import { Label } from '@/components/ui/Label'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import Notification from '@/src/components/ui/Notification'
 import { env } from '@/lib/env'
-import { Sparkles, AlertCircle, Loader2 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 
 interface PromptFormData {
   prompt: string
@@ -19,7 +21,7 @@ interface PromptInputProps {
   isLoading?: boolean
 }
 
-export default function PromptInput({ onSubmit, isLoading = false }: PromptInputProps) {
+const PromptInput = ({ onSubmit, isLoading = false }: PromptInputProps) => {
   const [charCount, setCharCount] = useState(0)
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<PromptFormData>({
     defaultValues: {
@@ -33,7 +35,6 @@ export default function PromptInput({ onSubmit, isLoading = false }: PromptInput
     setCharCount(promptValue.length)
   }, [promptValue])
 
-  // 로컬 스토리지 자동 저장
   useEffect(() => {
     const savedPrompt = localStorage.getItem('prompt-lens-draft')
     if (savedPrompt) {
@@ -50,11 +51,15 @@ export default function PromptInput({ onSubmit, isLoading = false }: PromptInput
   const isInvalid = charCount > 0 && charCount < env.minPromptLength
   const isOverLimit = charCount > env.maxPromptLength
 
+  const [notifyOpen, setNotifyOpen] = useState(false)
+  const [notifyMsg, setNotifyMsg] = useState('')
+
   const handleFormSubmit = (data: PromptFormData) => {
     if (onSubmit) {
       onSubmit(data)
     } else {
-      alert('프롬프트가 제출되었습니다!\n\n백엔드 연결 후 분석 결과가 표시됩니다.')
+      setNotifyMsg('프롬프트가 제출되었습니다. 곧 결과가 표시됩니다.')
+      setNotifyOpen(true)
     }
   }
 
@@ -169,6 +174,9 @@ export default function PromptInput({ onSubmit, isLoading = false }: PromptInput
           입력한 프롬프트는 자동으로 저장되며, 분석 후 삭제됩니다.
         </p>
       </form>
+      <Notification show={notifyOpen} message={notifyMsg} onClose={() => setNotifyOpen(false)} />
     </motion.div>
   )
 }
+
+export default PromptInput
