@@ -2,9 +2,10 @@
 
 import { motion } from 'framer-motion'
 import { Target, BarChart3, Lightbulb, Zap } from 'lucide-react'
+
 import FloatingMenu from '@/src/components/layout/FloatingMenu'
 
-const features = [
+const FEATURES = [
   {
     icon: Target,
     title: '5가지 평가 지표',
@@ -27,12 +28,11 @@ const features = [
   },
 ]
 
-export default function AboutPage() {
+const AboutPage = () => {
   return (
     <div className="h-screen w-screen overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex">
       <div className="w-full h-full overflow-y-auto">
         <div className="min-h-screen flex flex-col items-center justify-center px-8 py-20">
-          {/* Hero Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -50,14 +50,13 @@ export default function AboutPage() {
             </p>
           </motion.div>
 
-          {/* Features Grid */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto mb-20"
           >
-            {features.map((feature, index) => (
+            {FEATURES.map((feature, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -78,7 +77,6 @@ export default function AboutPage() {
             ))}
           </motion.div>
 
-          {/* How it Works */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -120,3 +118,5 @@ export default function AboutPage() {
     </div>
   )
 }
+
+export default AboutPage

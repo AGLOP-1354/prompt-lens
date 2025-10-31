@@ -59,32 +59,82 @@ CREATE POLICY "Users can update own profile" ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
 ```
 
-#### prompt_analyses 테이블
+#### saved_prompts 테이블 (신규 추가 - Phase 2)
+```sql
+CREATE TABLE public.saved_prompts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+
+  -- 프롬프트 내용
+  title VARCHAR(255) NOT NULL,
+  content TEXT NOT NULL,
+
+  -- 메타데이터
+  tags TEXT[] DEFAULT '{}',
+  is_favorite BOOLEAN DEFAULT FALSE,
+
+  -- 타임스탬프
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+  -- 제약조건
+  CONSTRAINT saved_prompts_content_length CHECK (char_length(content) >= 10 AND char_length(content) <= 5000)
+);
+
+-- 인덱스 생성
+CREATE INDEX idx_saved_prompts_user_id ON public.saved_prompts(user_id);
+CREATE INDEX idx_saved_prompts_created_at ON public.saved_prompts(created_at DESC);
+CREATE INDEX idx_saved_prompts_is_favorite ON public.saved_prompts(user_id, is_favorite) WHERE is_favorite = TRUE;
+CREATE INDEX idx_saved_prompts_tags ON public.saved_prompts USING GIN(tags);
+
+-- RLS 정책
+ALTER TABLE public.saved_prompts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own saved prompts" ON public.saved_prompts
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own saved prompts" ON public.saved_prompts
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own saved prompts" ON public.saved_prompts
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own saved prompts" ON public.saved_prompts
+  FOR DELETE USING (auth.uid() = user_id);
+```
+
+#### prompt_analyses 테이블 (확장됨)
 ```sql
 CREATE TABLE public.prompt_analyses (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   original_prompt TEXT NOT NULL,
   overall_score INTEGER NOT NULL CHECK (overall_score >= 0 AND overall_score <= 100),
-  
+
   -- 세부 점수
   clarity_score INTEGER NOT NULL CHECK (clarity_score >= 0 AND clarity_score <= 25),
   specificity_score INTEGER NOT NULL CHECK (specificity_score >= 0 AND specificity_score <= 25),
   structure_score INTEGER NOT NULL CHECK (structure_score >= 0 AND structure_score <= 20),
   completeness_score INTEGER NOT NULL CHECK (completeness_score >= 0 AND completeness_score <= 20),
   efficiency_score INTEGER NOT NULL CHECK (efficiency_score >= 0 AND efficiency_score <= 10),
-  
+
   -- 피드백
   clarity_feedback TEXT NOT NULL,
   specificity_feedback TEXT NOT NULL,
   structure_feedback TEXT NOT NULL,
   completeness_feedback TEXT NOT NULL,
   efficiency_feedback TEXT NOT NULL,
-  
+
   -- 개선 제안
   improved_prompt TEXT NOT NULL,
   improvements JSONB NOT NULL DEFAULT '[]'::jsonb,
-  
+
+  -- 신규 추가 컬럼 (v2.0)
+  grade VARCHAR(50) NOT NULL, -- 'Excellent', 'Good', 'Fair', 'Poor', 'Very Poor'
+  summary JSONB DEFAULT '{}'::jsonb, -- 종합 평가 (overall_assessment, key_strengths, priority_improvements, action_items)
+  is_saved BOOLEAN DEFAULT FALSE, -- saved_prompts에 저장 여부
+  saved_prompt_id UUID REFERENCES public.saved_prompts(id) ON DELETE SET NULL,
+
   -- 메타데이터
   analysis_version TEXT DEFAULT '1.0',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -95,6 +145,8 @@ CREATE TABLE public.prompt_analyses (
 CREATE INDEX idx_prompt_analyses_user_id ON public.prompt_analyses(user_id);
 CREATE INDEX idx_prompt_analyses_created_at ON public.prompt_analyses(created_at DESC);
 CREATE INDEX idx_prompt_analyses_overall_score ON public.prompt_analyses(overall_score);
+CREATE INDEX idx_prompt_analyses_grade ON public.prompt_analyses(grade);
+CREATE INDEX idx_prompt_analyses_is_saved ON public.prompt_analyses(user_id, is_saved) WHERE is_saved = TRUE;
 
 -- RLS 정책
 ALTER TABLE public.prompt_analyses ENABLE ROW LEVEL SECURITY;
@@ -134,6 +186,33 @@ CREATE POLICY "Users can manage own feedback" ON public.analysis_feedback
 
 ### 2.2 함수 및 트리거
 
+#### updated_at 자동 업데이트 함수
+```sql
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- saved_prompts 트리거
+CREATE TRIGGER update_saved_prompts_updated_at
+  BEFORE UPDATE ON public.saved_prompts
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
+-- prompt_analyses 트리거 (기존)
+CREATE TRIGGER update_prompt_analyses_updated_at
+  BEFORE UPDATE ON public.prompt_analyses
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- profiles 트리거 (기존)
+CREATE TRIGGER update_profiles_updated_at
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+```
+
 #### 프로필 자동 생성 함수
 ```sql
 -- 사용자 가입 시 프로필 자동 생성
@@ -159,25 +238,6 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 ```
 
-#### 업데이트 시간 자동 갱신 함수
-```sql
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- 트리거 적용
-CREATE TRIGGER update_profiles_updated_at
-  BEFORE UPDATE ON public.profiles
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_prompt_analyses_updated_at
-  BEFORE UPDATE ON public.prompt_analyses
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-```
 
 ## 3. 인증 시스템
 
