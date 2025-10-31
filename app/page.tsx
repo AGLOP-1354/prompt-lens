@@ -62,7 +62,16 @@ const Home = () => {
 
   useEffect(() => {
     if (!user) {
-      apiClient.post('/api/anon/log', { event: 'visit', metadata: { path: '/' } }).catch(() => {})
+      try {
+        const today = new Date().toISOString().slice(0, 10)
+        const last = localStorage.getItem('pl_anon_visit_last')
+        if (last !== today) {
+          apiClient
+            .post('/api/anon/log', { event: 'visit', metadata: { path: '/' } })
+            .catch(() => {})
+          localStorage.setItem('pl_anon_visit_last', today)
+        }
+      } catch {}
       return
     }
     const pending = localStorage.getItem('prompt-lens-pending-save')
@@ -243,9 +252,6 @@ const Home = () => {
         </div>
 
         <motion.button
-          initial={{ opacity: 0, y: 100 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, type: 'spring', damping: 20 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleAnalyze}
