@@ -164,6 +164,33 @@ CREATE POLICY "Users can delete own analyses" ON public.prompt_analyses
   FOR DELETE USING (auth.uid() = user_id);
 ```
 
+#### prompt_analyses RLS/정책 업데이트 (Migration 002)
+```sql
+-- PromptLens Migration: Enable RLS and policies for prompt_analyses
+ALTER TABLE IF EXISTS public.prompt_analyses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY IF NOT EXISTS "Users can view their own analyses"
+  ON public.prompt_analyses
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY IF NOT EXISTS "Users can insert their own analyses"
+  ON public.prompt_analyses
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY IF NOT EXISTS "Users can update their own analyses"
+  ON public.prompt_analyses
+  FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY IF NOT EXISTS "Users can delete their own analyses"
+  ON public.prompt_analyses
+  FOR DELETE
+  USING (auth.uid() = user_id);
+```
+
 #### analysis_feedback 테이블 (사용자 피드백)
 ```sql
 CREATE TABLE public.analysis_feedback (
@@ -940,6 +967,26 @@ export function logAnalytics(event: string, properties?: Record<string, any>) {
     timestamp: new Date().toISOString(),
   })
 }
+```
+
+### 9.2 익명 방문/분석 이벤트 로깅 (Migration 003)
+```sql
+-- Anonymous events logging
+CREATE TABLE IF NOT EXISTS public.anonymous_events (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  anon_token TEXT NOT NULL,
+  event TEXT NOT NULL,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  ip INET,
+  user_agent TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_anonymous_events_token ON public.anonymous_events(anon_token);
+CREATE INDEX IF NOT EXISTS idx_anonymous_events_event ON public.anonymous_events(event);
+CREATE INDEX IF NOT EXISTS idx_anonymous_events_created_at ON public.anonymous_events(created_at DESC);
+
+COMMENT ON TABLE public.anonymous_events IS '비로그인 사용자 방문/분석 등 익명 이벤트 로그';
 ```
 
 ## 10. 환경 설정
