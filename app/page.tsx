@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ChangeEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Loader2, AlertCircle, CheckCircle2, AlertTriangle, Lightbulb, TrendingUp, Copy, Check, Trophy, XCircle, BookmarkPlus } from 'lucide-react'
 
 import { env } from '@/lib/env'
+import { apiClient, authedApiClient } from '@/lib/fetcher/customFetch'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/src/context/AuthProvider'
 import Notification from '@/src/components/ui/Notification'
+import InputModal from '@/src/components/ui/InputModal'
 import FloatingMenu from '@/src/components/layout/FloatingMenu'
 import { Textarea } from '@/components/ui/Textarea'
 import type { AnalysisResult } from '@/src/types/analysis'
@@ -19,6 +21,8 @@ const Home = () => {
   const [charCount, setCharCount] = useState(0)
   const [isCopied, setIsCopied] = useState(false)
   const [showNotification, setShowNotification] = useState(false)
+  const [notificationMessage, setNotificationMessage] = useState('')
+  const [titleModalOpen, setTitleModalOpen] = useState(false)
   const { user, openLoginModal } = useAuth()
 
   useEffect(() => {
@@ -38,6 +42,33 @@ const Home = () => {
     }
   }, [prompt])
 
+  useEffect(() => {
+    try {
+      if (result) {
+        localStorage.setItem('prompt-lens-last-result', JSON.stringify(result))
+      }
+    } catch {}
+  }, [result])
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('prompt-lens-last-result')
+      if (saved) {
+        const parsed = JSON.parse(saved) as AnalysisResult
+        setResult(parsed)
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    if (!user) return
+    const pending = localStorage.getItem('prompt-lens-pending-save')
+    if (pending === '1') {
+      localStorage.removeItem('prompt-lens-pending-save')
+      setTitleModalOpen(true)
+    }
+  }, [user])
+
   const isInvalid = charCount > 0 && charCount < env.minPromptLength
   const isOverLimit = charCount > env.maxPromptLength
 
@@ -53,75 +84,27 @@ const Home = () => {
 
   const handleSaveResult = async () => {
     if (!user) {
-      openLoginModal(() => handleSaveResult())
+      try {
+        localStorage.setItem('prompt-lens-pending-save', '1')
+        if (result) {
+          localStorage.setItem('prompt-lens-last-result', JSON.stringify(result))
+        }
+      } catch {}
+      openLoginModal()
       return
     }
 
-    if (!result || !prompt) {
-      alert('저장할 데이터가 없습니다.')
+    if (!prompt) {
+      setNotificationMessage('저장할 프롬프트가 없습니다.')
+      setShowNotification(true)
       return
     }
 
     try {
-      const historyPayload = {
-        original_prompt: prompt,
-        overall_score: result.overall_score,
-        grade: result.grade,
-        clarity_score: result.scores.clarity,
-        specificity_score: result.scores.specificity,
-        structure_score: result.scores.structure,
-        completeness_score: result.scores.completeness,
-        efficiency_score: result.scores.efficiency,
-        summary: result.summary,
-        improved_prompt: result.improved_prompt?.text,
-        improvements: result.improved_prompt
-          ? {
-              changes: result.improved_prompt.changes,
-              expected_score_improvement: result.improved_prompt.expected_score_improvement,
-            }
-          : undefined,
-      }
-
-      const historyRes = await fetch('/api/history', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(historyPayload),
-      })
-
-      if (!historyRes.ok) {
-        throw new Error('분석 기록 저장 실패')
-      }
-
-      const shouldSavePrompt = confirm('프롬프트도 함께 저장하시겠습니까?')
-
-      if (shouldSavePrompt) {
-        const title = window.prompt('프롬프트 제목을 입력하세요:', prompt.slice(0, 50))
-        if (title) {
-          const promptPayload = {
-            title,
-            content: prompt,
-            tags: [],
-            is_favorite: false,
-          }
-
-          const promptRes = await fetch('/api/prompts', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(promptPayload),
-          })
-
-          if (!promptRes.ok) {
-            throw new Error('프롬프트 저장 실패')
-          }
-
-          setShowNotification(true)
-        }
-      } else {
-        setShowNotification(true)
-      }
+      setTitleModalOpen(true)
     } catch (error) {
-      console.error('저장 오류:', error)
-      alert('저장 중 오류가 발생했습니다.')
+      setNotificationMessage('저장 중 오류가 발생했습니다.')
+      setShowNotification(true)
     }
   }
 
@@ -130,26 +113,46 @@ const Home = () => {
 
     setIsLoading(true)
     setResult(null)
+    try { localStorage.removeItem('prompt-lens-last-result') } catch {}
 
     try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt }),
-      })
+      const { data } = await apiClient.post<{ success: boolean; data: AnalysisResult; error?: string }>(
+        '/api/analyze',
+        { prompt }
+      )
 
-      const data = await response.json()
-
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         throw new Error(data.error || '분석 중 오류가 발생했습니다.')
       }
 
       setResult(data.data)
-    } catch (error) {
-      console.error('분석 오류:', error)
 
+      if (user) {
+        const r = data.data
+        const historyPayload = {
+          original_prompt: prompt,
+          overall_score: r.overall_score,
+          grade: r.grade,
+          clarity_score: r.scores.clarity,
+          specificity_score: r.scores.specificity,
+          structure_score: r.scores.structure,
+          completeness_score: r.scores.completeness,
+          efficiency_score: r.scores.efficiency,
+          summary: r.summary,
+          improved_prompt: r.improved_prompt?.text,
+          improvements: r.improved_prompt
+            ? {
+                changes: r.improved_prompt.changes,
+                expected_score_improvement: r.improved_prompt.expected_score_improvement,
+              }
+            : undefined,
+        }
+
+        await authedApiClient.post('/api/history', historyPayload, {
+          onUnauthorized: () => openLoginModal(() => handleAnalyze()),
+        })
+      }
+    } catch (error) {
       let errorMessage = '분석 중 오류가 발생했습니다.'
 
       if (error instanceof Error) {
@@ -161,8 +164,8 @@ const Home = () => {
           errorMessage = error.message
         }
       }
-
-      alert(errorMessage)
+      setNotificationMessage(errorMessage)
+      setShowNotification(true)
     } finally {
       setIsLoading(false)
     }
@@ -179,7 +182,7 @@ const Home = () => {
         <div className="h-full p-8 flex flex-col">
           <Textarea
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setPrompt(e.target.value)}
             placeholder="프롬프트를 입력하세요..."
             className={cn(
               "flex-1 resize-none text-lg border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none p-0",
@@ -231,7 +234,6 @@ const Home = () => {
             </AnimatePresence>
           </motion.div>
 
-          {/* subtle helper */}
           <p className="mt-2 text-xs text-slate-400">
             명확한 목적, 필요한 맥락, 기대 출력 형식을 함께 적어주세요.
           </p>
@@ -397,13 +399,11 @@ const Home = () => {
                 </motion.div>
               </motion.div>
             ) : (
-              // Valid Prompt Results
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-6"
               >
-                {/* Compact Score Overview */}
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -436,9 +436,9 @@ const Home = () => {
                   </motion.button>
                 </div>
 
-                {/* Compact Scores Grid */}
                 <div className="grid grid-cols-5 gap-3">
-                  {Object.entries(result.scores).map(([key, value]: [string, any], index) => {
+                  {(Object.keys(result.scores) as Array<keyof AnalysisResult['scores']>).map((key, index) => {
+                    const value = result.scores[key]
                     const maxScore = key === 'clarity' || key === 'specificity' ? 25 :
                                     key === 'structure' || key === 'completeness' ? 20 : 10
                     const percentage = (value / maxScore) * 100
@@ -471,7 +471,6 @@ const Home = () => {
                 </div>
               </motion.div>
 
-              {/* Overall Assessment */}
               {result.summary && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -487,7 +486,6 @@ const Home = () => {
                 </motion.div>
               )}
 
-              {/* Key Strengths */}
               {result.summary && result.summary.key_strengths && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -516,7 +514,6 @@ const Home = () => {
                 </motion.div>
               )}
 
-              {/* Perfect Prompt Praise - 개선점이 없을 때만 표시 */}
               {result.summary && (!result.summary.priority_improvements || result.summary.priority_improvements.length === 0) &&
                (!result.summary.action_items || result.summary.action_items.length === 0) &&
                !result.improved_prompt && (
@@ -545,7 +542,6 @@ const Home = () => {
                 </motion.div>
               )}
 
-              {/* Priority Improvements - 개선점이 있을 때만 표시 */}
               {result.summary && result.summary.priority_improvements && result.summary.priority_improvements.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -574,7 +570,6 @@ const Home = () => {
                 </motion.div>
               )}
 
-              {/* Action Items - 개선점이 있을 때만 표시 */}
               {result.summary && result.summary.action_items && result.summary.action_items.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -603,7 +598,6 @@ const Home = () => {
                 </motion.div>
               )}
 
-              {/* Improved Prompt - 개선된 프롬프트가 있을 때만 표시 */}
               {result.improved_prompt && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -695,10 +689,37 @@ const Home = () => {
 
       <Notification
         show={showNotification}
-        message="저장이 성공했습니다!"
-        linkText="확인하러 가기"
-        linkHref="/history"
+        message={notificationMessage || '처리가 완료되었습니다.'}
+        linkText={notificationMessage?.includes('저장') ? '확인하러 가기' : undefined}
+        linkHref={notificationMessage?.includes('저장') ? '/saved' : undefined}
         onClose={() => setShowNotification(false)}
+      />
+
+      <InputModal
+        open={titleModalOpen}
+        title="프롬프트 제목"
+        description="저장할 프롬프트의 제목을 입력하세요."
+        placeholder="예: 내 업무 보고서 템플릿"
+        initialValue={prompt.slice(0, 50)}
+        confirmLabel="저장"
+        cancelLabel="취소"
+        onClose={() => setTitleModalOpen(false)}
+        onConfirm={async (title: string) => {
+          if (!title) return setTitleModalOpen(false)
+          try {
+            const payload = { title, content: prompt, tags: [], is_favorite: false }
+            await authedApiClient.post('/api/prompts', payload, {
+              onUnauthorized: () => openLoginModal(() => handleSaveResult()),
+            })
+            setTitleModalOpen(false)
+            setNotificationMessage('프롬프트가 저장되었습니다!')
+            setShowNotification(true)
+          } catch {
+            setTitleModalOpen(false)
+            setNotificationMessage('저장 중 오류가 발생했습니다.')
+            setShowNotification(true)
+          }
+        }}
       />
     </div>
   )
