@@ -19,15 +19,15 @@ const FloatingMenu = () => {
 
   return (
     <>
-      <div className="fixed bottom-8 right-8 z-50">
+      <div className="fixed bottom-4 md:bottom-8 right-4 md:right-8 z-50">
         <motion.button
           onClick={() => setIsOpen(!isOpen)}
-          className="relative w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-full shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center group hover:scale-110"
+          className="relative w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-full shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center group hover:scale-110 touch-manipulation"
         >
-          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {isOpen ? <X className="w-5 h-5 md:w-6 md:h-6" /> : <Menu className="w-5 h-5 md:w-6 md:h-6" />}
 
           {isNewUser && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg">
+            <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px] md:text-xs font-bold shadow-lg">
               N
             </div>
           )}
@@ -41,20 +41,20 @@ const FloatingMenu = () => {
             animate={{ opacity: 1, x: 0, y: 0 }}
             exit={{ opacity: 0, x: 100, y: 100 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-24 right-8 z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+            className="fixed bottom-20 md:bottom-24 right-4 md:right-8 z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
           >
-              <div className="flex flex-col min-w-[200px]">
+              <div className="flex flex-col min-w-[180px] md:min-w-[200px]">
                 <Link
                   href="/"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 px-6 py-4 hover:bg-blue-50 transition-colors group ${
+                  className={`flex items-center gap-3 px-4 md:px-6 py-3 md:py-4 hover:bg-blue-50 transition-colors group touch-manipulation ${
                     pathname === '/' ? 'bg-blue-50' : ''
                   }`}
                 >
-                  <Sparkles className={`w-5 h-5 transition-colors ${
+                  <Sparkles className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${
                     pathname === '/' ? 'text-blue-600' : 'text-slate-600 group-hover:text-blue-600'
                   }`} />
-                  <span className={`font-medium transition-colors ${
+                  <span className={`text-sm md:text-base font-medium transition-colors ${
                     pathname === '/' ? 'text-blue-600' : 'text-slate-700 group-hover:text-blue-600'
                   }`}>
                     분석
@@ -67,14 +67,14 @@ const FloatingMenu = () => {
                     <Link
                       href="/saved"
                       onClick={() => setIsOpen(false)}
-                      className={`flex items-center gap-3 px-6 py-4 hover:bg-blue-50 transition-colors group ${
+                      className={`flex items-center gap-3 px-4 md:px-6 py-3 md:py-4 hover:bg-blue-50 transition-colors group touch-manipulation ${
                         pathname === '/saved' ? 'bg-blue-50' : ''
                       }`}
                     >
-                      <BookmarkPlus className={`w-5 h-5 transition-colors ${
+                      <BookmarkPlus className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${
                         pathname === '/saved' ? 'text-blue-600' : 'text-slate-600 group-hover:text-blue-600'
                       }`} />
-                      <span className={`font-medium transition-colors ${
+                      <span className={`text-sm md:text-base font-medium transition-colors ${
                         pathname === '/saved' ? 'text-blue-600' : 'text-slate-700 group-hover:text-blue-600'
                       }`}>
                         저장한 프롬프트
@@ -84,14 +84,14 @@ const FloatingMenu = () => {
                     <Link
                       href="/history"
                       onClick={() => setIsOpen(false)}
-                      className={`flex items-center gap-3 px-6 py-4 hover:bg-blue-50 transition-colors group ${
+                      className={`flex items-center gap-3 px-4 md:px-6 py-3 md:py-4 hover:bg-blue-50 transition-colors group touch-manipulation ${
                         pathname === '/history' ? 'bg-blue-50' : ''
                       }`}
                     >
-                      <History className={`w-5 h-5 transition-colors ${
+                      <History className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${
                         pathname === '/history' ? 'text-blue-600' : 'text-slate-600 group-hover:text-blue-600'
                       }`} />
-                      <span className={`font-medium transition-colors ${
+                      <span className={`text-sm md:text-base font-medium transition-colors ${
                         pathname === '/history' ? 'text-blue-600' : 'text-slate-700 group-hover:text-blue-600'
                       }`}>
                         분석 기록
@@ -101,14 +101,14 @@ const FloatingMenu = () => {
                     <Link
                       href="/settings"
                       onClick={() => setIsOpen(false)}
-                      className={`flex items-center gap-3 px-6 py-4 hover:bg-blue-50 transition-colors group ${
+                      className={`flex items-center gap-3 px-4 md:px-6 py-3 md:py-4 hover:bg-blue-50 transition-colors group touch-manipulation ${
                         pathname === '/settings' ? 'bg-blue-50' : ''
                       }`}
                     >
-                      <Settings className={`w-5 h-5 transition-colors ${
+                      <Settings className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${
                         pathname === '/settings' ? 'text-blue-600' : 'text-slate-600 group-hover:text-blue-600'
                       }`} />
-                      <span className={`font-medium transition-colors ${
+                      <span className={`text-sm md:text-base font-medium transition-colors ${
                         pathname === '/settings' ? 'text-blue-600' : 'text-slate-700 group-hover:text-blue-600'
                       }`}>
                         설정
@@ -121,14 +121,14 @@ const FloatingMenu = () => {
                 <Link
                   href="/about"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 px-6 py-4 hover:bg-blue-50 transition-colors group ${
+                  className={`flex items-center gap-3 px-4 md:px-6 py-3 md:py-4 hover:bg-blue-50 transition-colors group touch-manipulation ${
                     pathname === '/about' ? 'bg-blue-50' : ''
                   }`}
                 >
-                  <Info className={`w-5 h-5 transition-colors ${
+                  <Info className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${
                     pathname === '/about' ? 'text-blue-600' : 'text-slate-600 group-hover:text-blue-600'
                   }`} />
-                  <span className={`font-medium transition-colors ${
+                  <span className={`text-sm md:text-base font-medium transition-colors ${
                     pathname === '/about' ? 'text-blue-600' : 'text-slate-700 group-hover:text-blue-600'
                   }`}>
                     소개
