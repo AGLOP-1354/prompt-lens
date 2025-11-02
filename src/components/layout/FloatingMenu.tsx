@@ -134,18 +134,6 @@ const FloatingMenu = () => {
                     소개
                   </span>
                 </Link>
-                <div className="h-px bg-slate-200" />
-                <a
-                  href="https://github.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-6 py-4 hover:bg-blue-50 transition-colors group"
-                >
-                  <Github className="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors" />
-                  <span className="font-medium text-slate-700 group-hover:text-blue-600 transition-colors">
-                    GitHub
-                  </span>
-                </a>
               </div>
           </motion.div>
         )}
