@@ -101,35 +101,217 @@ const hasCoreFields = (
   )
 }
 
-const tryRecoverFromUnterminatedString = (json: string): unknown | null => {
-  const patterns = [
-    /,\s*"improved_prompt"\s*:\s*\{[^}]*$/,
-    /,\s*"[^"]+"\s*:\s*"[^"]*$/,
-    /,\s*"[^"]+"\s*:\s*\{[^}]*$/,
-    /,\s*[^,]*$/,
-  ]
+const fixUnterminatedString = (json: string): string => {
+  let fixed = json
 
-  for (const pattern of patterns) {
-    const testJson = json.replace(pattern, '') + '}'
+  let inString = false
+  let escapeNext = false
+  let stringStart = -1
+  let problematicPos = -1
+  
+  for (let i = 0; i < json.length; i++) {
+    const char = json[i]
+    
+    if (escapeNext) {
+      escapeNext = false
+      continue
+    }
+
+    if (char === '\\') {
+      escapeNext = true
+      continue
+    }
+
+    if (char === '"') {
+      if (!inString) {
+        // 문자열 시작
+        inString = true
+        stringStart = i
+      } else {
+        // 문자열 종료
+        inString = false
+        stringStart = -1
+      }
+      continue
+    }
+
+    if (inString) {
+      // 문자열 내부에서 문제가 될 수 있는 문자 발견
+      if (char === '\n' || char === '\r' || (char.charCodeAt(0) < 32 && char !== '\t')) {
+        // 문제 발견: 문자열이 제대로 종료되지 않음
+        problematicPos = stringStart
+        break
+      }
+      // 매우 긴 문자열도 문제일 수 있음 (AI가 잘린 경우)
+      if (i - stringStart > 10000) {
+        problematicPos = stringStart
+        break
+      }
+    }
+  }
+
+  // 문제가 있는 문자열을 찾았으면 해당 속성 전체 제거
+  if (problematicPos > 0) {
+    // 문자열이 시작한 위치 전까지 유지
+    let cutPos = problematicPos
+    
+    // 속성 이름의 시작 찾기 (이전 콤마나 중괄호)
+    for (let i = problematicPos - 1; i >= 0; i--) {
+      if (json[i] === ',') {
+        cutPos = i
+        break
+      } else if (json[i] === '{' || json[i] === '}') {
+        cutPos = i + 1
+        break
+      }
+    }
+    
+    fixed = json.slice(0, cutPos).trim()
+    
+    // 마지막 콤마 제거
+    if (fixed.endsWith(',')) {
+      fixed = fixed.slice(0, -1).trim()
+    }
+    
+    // 중괄호 밸런스 맞추기
+    const openCount = (fixed.match(/\{/g) || []).length
+    const closeCount = (fixed.match(/\}/g) || []).length
+    if (openCount > closeCount) {
+      fixed = fixed.trimEnd() + '}'.repeat(openCount - closeCount)
+    }
+    
+    return fixed
+  }
+
+  // 다른 접근: 마지막 불완전한 속성 찾기
+  // 큰따옴표로 시작하지만 종료되지 않은 속성 찾기
+  const unterminatedPattern = /("([^"\\]|\\.)*$)/m
+  const match = json.match(unterminatedPattern)
+  if (match && match.index !== undefined) {
+    // 불완전한 문자열 시작 위치 찾기
+    const startPos = match.index
+    // 이전 콤마나 중괄호 찾기
+    for (let i = startPos - 1; i >= 0; i--) {
+      if (json[i] === ',') {
+        fixed = json.slice(0, i).trim()
+        if (fixed.endsWith(',')) {
+          fixed = fixed.slice(0, -1).trim()
+        }
+        const openCount = (fixed.match(/\{/g) || []).length
+        const closeCount = (fixed.match(/\}/g) || []).length
+        if (openCount > closeCount) {
+          fixed = fixed.trimEnd() + '}'.repeat(openCount - closeCount)
+        }
+        return fixed
+      } else if (json[i] === '{') {
+        fixed = json.slice(0, i + 1).trim() + '}'
+        return fixed
+      }
+    }
+  }
+
+  // 마지막 수단: 마지막 콤마 이후 제거
+  const lastCommaIdx = json.lastIndexOf(',')
+  if (lastCommaIdx > json.length * 0.8) {
+    // 마지막 부분에 콤마가 있으면 그 이후 제거 시도
+    fixed = json.slice(0, lastCommaIdx).trim()
+    const openCount = (fixed.match(/\{/g) || []).length
+    const closeCount = (fixed.match(/\}/g) || []).length
+    if (openCount > closeCount) {
+      fixed = fixed.trimEnd() + '}'.repeat(openCount - closeCount)
+    }
+  }
+
+  return fixed
+}
+
+const tryRecoverFromUnterminatedString = (json: string): unknown | null => {
+  // 1. 개선된 문자열 수정 시도
+  try {
+    const fixed = fixUnterminatedString(json)
+    const recovered: unknown = JSON.parse(fixed)
+    if (hasCoreFields(recovered)) {
+      return recovered
+    }
+  } catch {
+    // 계속 시도
+  }
+
+  // 2. improved_prompt 섹션이 불완전한 경우, 해당 섹션만 제거 시도 (선택적 필드이므로)
+  // 하지만 가능하면 보존하려고 시도
+  const improvedPromptMatch = json.match(/(,\s*"improved_prompt"\s*:\s*\{)([\s\S]*)/)
+  if (improvedPromptMatch) {
+    // improved_prompt가 있지만 불완전한 경우, 해당 섹션만 제거
+    const beforeImprovedPrompt = json.slice(0, improvedPromptMatch.index || 0)
+    const testJson = beforeImprovedPrompt.trim().replace(/,$/, '') + '}'
+    const balanced = balanceJsonBraces(testJson)
     try {
-      const recovered: unknown = JSON.parse(testJson)
+      const recovered: unknown = JSON.parse(balanced)
+      if (hasCoreFields(recovered)) {
+        // improved_prompt가 없어도 핵심 필드는 있으므로 반환
+        return recovered
+      }
+    } catch {
+      // 계속 시도
+    }
+  }
+
+  // 3. 마지막 불완전한 속성 제거 시도
+  const lastCommaMatch = json.lastIndexOf(',')
+  if (lastCommaMatch > 0) {
+    const testJson = json.slice(0, lastCommaMatch) + '}'
+    const balanced = balanceJsonBraces(testJson)
+    try {
+      const recovered: unknown = JSON.parse(balanced)
       if (hasCoreFields(recovered)) {
         return recovered
       }
     } catch {
+      // 실패
     }
   }
+
   return null
 }
 
 const parseAnalysisResult = (content: string): AnalysisResult => {
   const extracted = extractJsonBlock(content)
   const balanced = balanceJsonBraces(extracted)
-  const jsonContent = sanitizeJsonString(balanced)
+  let jsonContent = sanitizeJsonString(balanced)
 
   let parsed: unknown
   try {
-    parsed = JSON.parse(jsonContent)
+    // Unterminated string 오류 사전 방지 및 재시도
+    try {
+      parsed = JSON.parse(jsonContent)
+    } catch (preError) {
+      if (preError instanceof SyntaxError && preError.message.includes('Unterminated string')) {
+        // 여러 번 시도 (최대 3회)
+        let attempt = 0
+        let currentJson = jsonContent
+        while (attempt < 3) {
+          try {
+            currentJson = fixUnterminatedString(currentJson)
+            parsed = JSON.parse(currentJson)
+            jsonContent = currentJson // 성공한 버전으로 업데이트
+            break
+          } catch (retryError) {
+            attempt++
+            if (attempt >= 3 || !(retryError instanceof SyntaxError && retryError.message.includes('Unterminated string'))) {
+              // 재시도 실패 시 tryRecoverFromUnterminatedString 시도
+              const recovered = tryRecoverFromUnterminatedString(jsonContent)
+              if (recovered && hasCoreFields(recovered)) {
+                parsed = recovered
+                break
+              }
+              throw retryError
+            }
+          }
+        }
+      } else {
+        throw preError
+      }
+    }
 
     if (!hasCoreFields(parsed)) {
       console.error('필수 필드 누락:', {
