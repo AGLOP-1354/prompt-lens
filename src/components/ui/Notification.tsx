@@ -2,12 +2,15 @@
 
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle2, X } from 'lucide-react'
+import { CheckCircle2, X, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
+
+type NotificationType = 'success' | 'warning' | 'error'
 
 interface NotificationProps {
   show: boolean
   message: string
+  type?: NotificationType
   linkText?: string
   linkHref?: string
   onClose: () => void
@@ -17,6 +20,7 @@ interface NotificationProps {
 export default function Notification({
   show,
   message,
+  type = 'success',
   linkText,
   linkHref,
   onClose,
@@ -32,6 +36,32 @@ export default function Notification({
     }
   }, [show, duration, onClose])
 
+  const getIconStyles = () => {
+    switch (type) {
+      case 'warning':
+        return {
+          bg: 'bg-amber-100',
+          icon: AlertTriangle,
+          iconColor: 'text-amber-600',
+        }
+      case 'error':
+        return {
+          bg: 'bg-red-100',
+          icon: X,
+          iconColor: 'text-red-600',
+        }
+      default: // success
+        return {
+          bg: 'bg-green-100',
+          icon: CheckCircle2,
+          iconColor: 'text-green-600',
+        }
+    }
+  }
+
+  const iconStyles = getIconStyles()
+  const Icon = iconStyles.icon
+
   return (
     <AnimatePresence>
       {show && (
@@ -43,8 +73,8 @@ export default function Notification({
           className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] max-w-md w-full mx-4"
         >
           <div className="bg-white rounded-xl shadow-2xl border border-slate-200 p-4 flex items-center gap-3">
-            <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6 text-green-600" />
+            <div className={`flex-shrink-0 w-10 h-10 ${iconStyles.bg} rounded-full flex items-center justify-center`}>
+              <Icon className={`w-6 h-6 ${iconStyles.iconColor}`} />
             </div>
 
             <div className="flex-1">

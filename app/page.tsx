@@ -22,6 +22,7 @@ const Home = () => {
   const [isCopied, setIsCopied] = useState(false)
   const [showNotification, setShowNotification] = useState(false)
   const [notificationMessage, setNotificationMessage] = useState('')
+  const [notificationType, setNotificationType] = useState<'success' | 'warning' | 'error'>('success')
   const [titleModalOpen, setTitleModalOpen] = useState(false)
   const { user, openLoginModal } = useAuth()
 
@@ -95,6 +96,13 @@ const Home = () => {
   }
 
   const handleSaveResult = async () => {
+    if (result && result.overall_score < 60) {
+      setNotificationMessage('저장할 가치가 없습니다')
+      setNotificationType('warning')
+      setShowNotification(true)
+      return
+    }
+
     if (!user) {
       try {
         localStorage.setItem('prompt-lens-pending-save', '1')
@@ -108,6 +116,7 @@ const Home = () => {
 
     if (!prompt) {
       setNotificationMessage('저장할 프롬프트가 없습니다.')
+      setNotificationType('warning')
       setShowNotification(true)
       return
     }
@@ -116,6 +125,7 @@ const Home = () => {
       setTitleModalOpen(true)
     } catch (error) {
       setNotificationMessage('저장 중 오류가 발생했습니다.')
+      setNotificationType('error')
       setShowNotification(true)
     }
   }
@@ -177,6 +187,7 @@ const Home = () => {
         }
       }
       setNotificationMessage(errorMessage)
+      setNotificationType('error')
       setShowNotification(true)
     } finally {
       setIsLoading(false)
@@ -699,8 +710,17 @@ const Home = () => {
       <Notification
         show={showNotification}
         message={notificationMessage || '처리가 완료되었습니다.'}
-        linkText={notificationMessage?.includes('저장') ? '확인하러 가기' : undefined}
-        linkHref={notificationMessage?.includes('저장') ? '/saved' : undefined}
+        type={notificationType}
+        linkText={
+          notificationMessage?.includes('저장') && !notificationMessage.includes('저장할 가치가 없습니다')
+            ? '확인하러 가기'
+            : undefined
+        }
+        linkHref={
+          notificationMessage?.includes('저장') && !notificationMessage.includes('저장할 가치가 없습니다')
+            ? '/saved'
+            : undefined
+        }
         onClose={() => setShowNotification(false)}
       />
 
@@ -722,10 +742,12 @@ const Home = () => {
             })
             setTitleModalOpen(false)
             setNotificationMessage('프롬프트가 저장되었습니다!')
+            setNotificationType('success')
             setShowNotification(true)
           } catch {
             setTitleModalOpen(false)
             setNotificationMessage('저장 중 오류가 발생했습니다.')
+            setNotificationType('error')
             setShowNotification(true)
           }
         }}
