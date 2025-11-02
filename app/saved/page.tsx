@@ -12,6 +12,7 @@ import {
   Tag as TagIcon,
   Calendar,
   Loader2,
+  X,
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -108,26 +109,27 @@ const SavedPromptsContent = () => {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="h-full flex">
-        <div className="w-1/2 h-full border-r border-slate-200 flex flex-col bg-white">
-          <div className="p-6 border-b border-slate-200 space-y-4">
+      <div className="h-full flex flex-col md:flex-row">
+        {/* 리스트 영역 - 모바일에서는 전체 화면, 데스크톱에서는 왼쪽 절반 */}
+        <div className="w-full md:w-1/2 h-full border-r border-slate-200 flex flex-col bg-white">
+          <div className="p-4 md:p-6 border-b border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                <BookmarkPlus className="w-7 h-7 text-blue-600" />
+              <h1 className="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <BookmarkPlus className="w-5 h-5 md:w-7 md:h-7 text-blue-600" />
                 저장한 프롬프트
               </h1>
-              <span className="text-sm text-slate-500">{filteredPrompts.length}개</span>
+              <span className="text-xs md:text-sm text-slate-500">{filteredPrompts.length}개</span>
             </div>
 
             <div className="flex gap-2">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-slate-400" />
                 <input
                   type="text"
                   placeholder="검색..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-9 md:pl-10 pr-4 py-2 text-sm md:text-base border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <motion.button
@@ -135,27 +137,27 @@ const SavedPromptsContent = () => {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setFilterFavorite(!filterFavorite)}
                 className={cn(
-                  'px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2',
+                  'px-3 md:px-4 py-2 rounded-lg text-xs md:text-sm font-medium transition-colors flex items-center gap-1 md:gap-2 touch-manipulation',
                   filterFavorite
                     ? 'bg-amber-100 text-amber-700 border border-amber-300'
                     : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-50'
                 )}
               >
-                <Star className={cn('w-4 h-4', filterFavorite && 'fill-amber-500')} />
-                즐겨찾기
+                <Star className={cn('w-3 h-3 md:w-4 md:h-4', filterFavorite && 'fill-amber-500')} />
+                <span className="hidden sm:inline">즐겨찾기</span>
               </motion.button>
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto p-4 space-y-2">
+          <div className="flex-1 overflow-auto p-3 md:p-4 space-y-2 pb-20 md:pb-4">
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                <Loader2 className="w-6 h-6 md:w-8 md:h-8 text-blue-600 animate-spin" />
               </div>
             ) : filteredPrompts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <BookmarkPlus className="w-16 h-16 text-slate-300 mb-4" />
-                <p className="text-slate-500">
+                <BookmarkPlus className="w-12 h-12 md:w-16 md:h-16 text-slate-300 mb-4" />
+                <p className="text-sm md:text-base text-slate-500">
                   {searchQuery || filterFavorite ? '검색 결과가 없습니다' : '저장한 프롬프트가 없습니다'}
                 </p>
               </div>
@@ -169,14 +171,14 @@ const SavedPromptsContent = () => {
                     exit={{ opacity: 0, y: -10 }}
                     onClick={() => setSelectedPrompt(prompt)}
                     className={cn(
-                      'p-4 rounded-lg border cursor-pointer transition-all',
+                      'p-3 md:p-4 rounded-lg border cursor-pointer transition-all touch-manipulation',
                       selectedPrompt?.id === prompt.id
                         ? 'bg-blue-50 border-blue-300'
                         : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
                     )}
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-slate-800 flex-1">{prompt.title}</h3>
+                      <h3 className="text-sm md:text-base font-semibold text-slate-800 flex-1">{prompt.title}</h3>
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
@@ -184,10 +186,11 @@ const SavedPromptsContent = () => {
                           e.stopPropagation()
                           toggleFavorite(prompt.id, prompt.is_favorite)
                         }}
+                        className="touch-manipulation"
                       >
                         <Star
                           className={cn(
-                            'w-5 h-5',
+                            'w-4 h-4 md:w-5 md:h-5',
                             prompt.is_favorite
                               ? 'fill-amber-400 text-amber-400'
                               : 'text-slate-300 hover:text-amber-400'
@@ -195,8 +198,8 @@ const SavedPromptsContent = () => {
                         />
                       </motion.button>
                     </div>
-                    <p className="text-sm text-slate-600 line-clamp-2 mb-2">{prompt.content}</p>
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <p className="text-xs md:text-sm text-slate-600 line-clamp-2 mb-2">{prompt.content}</p>
+                    <div className="flex items-center gap-2 text-[10px] md:text-xs text-slate-500">
                       <Calendar className="w-3 h-3" />
                       <span>{formatDate(prompt.created_at)}</span>
                       {prompt.tags.length > 0 && (
@@ -206,13 +209,13 @@ const SavedPromptsContent = () => {
                             {prompt.tags.slice(0, 2).map((tag) => (
                               <span
                                 key={tag}
-                                className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded"
+                                className="px-1.5 md:px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] md:text-xs"
                               >
                                 {tag}
                               </span>
                             ))}
                             {prompt.tags.length > 2 && (
-                              <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
+                              <span className="px-1.5 md:px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] md:text-xs">
                                 +{prompt.tags.length - 2}
                               </span>
                             )}
@@ -227,7 +230,8 @@ const SavedPromptsContent = () => {
           </div>
         </div>
 
-        <div className="w-1/2 h-full bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        {/* 상세 영역 - 모바일에서는 숨김, 데스크톱에서는 오른쪽 절반 */}
+        <div className="hidden md:flex w-1/2 h-full bg-gradient-to-br from-blue-50 via-white to-indigo-50">
           {selectedPrompt ? (
             <div className="h-full overflow-auto p-8">
               <motion.div
@@ -315,6 +319,122 @@ const SavedPromptsContent = () => {
           )}
         </div>
       </div>
+
+      {/* 모바일 Drawer */}
+      <AnimatePresence>
+        {selectedPrompt && (
+          <>
+            {/* 배경 오버레이 */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedPrompt(null)}
+              className="fixed inset-0 bg-black/50 z-[60] md:hidden"
+            />
+            {/* Drawer */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-[70] md:hidden max-h-[90vh] flex flex-col"
+            >
+              {/* Drawer 헤더 */}
+              <div className="flex items-center justify-between p-4 border-b border-slate-200">
+                <h2 className="text-lg font-bold text-slate-800 flex-1">{selectedPrompt.title}</h2>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSelectedPrompt(null)}
+                  className="p-2 rounded-lg hover:bg-slate-100 transition-colors touch-manipulation"
+                >
+                  <X className="w-5 h-5 text-slate-600" />
+                </motion.button>
+              </div>
+
+              {/* Drawer 내용 */}
+              <div className="flex-1 overflow-auto p-4 space-y-4">
+                <div className="flex items-center gap-3 text-xs text-slate-600 mb-4">
+                  <Calendar className="w-4 h-4" />
+                  <span>{formatDate(selectedPrompt.created_at)}</span>
+                  {selectedPrompt.updated_at !== selectedPrompt.created_at && (
+                    <>
+                      <span>•</span>
+                      <span>수정됨: {formatDate(selectedPrompt.updated_at)}</span>
+                    </>
+                  )}
+                </div>
+
+                <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
+                  <h3 className="text-xs font-semibold text-slate-700 mb-2">프롬프트 내용</h3>
+                  <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">
+                    {selectedPrompt.content}
+                  </p>
+                </div>
+
+                {selectedPrompt.tags.length > 0 && (
+                  <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
+                    <h3 className="text-xs font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                      <TagIcon className="w-3 h-3" />
+                      태그
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedPrompt.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 액션 버튼들 */}
+                <div className="flex gap-2 pt-2">
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      toggleFavorite(selectedPrompt.id, selectedPrompt.is_favorite)
+                    }}
+                    className={cn(
+                      'flex-1 px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 touch-manipulation',
+                      selectedPrompt.is_favorite
+                        ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                        : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-50'
+                    )}
+                  >
+                    <Star className={cn('w-4 h-4', selectedPrompt.is_favorite && 'fill-amber-500')} />
+                    {selectedPrompt.is_favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => copyPrompt(selectedPrompt.content, selectedPrompt.id)}
+                    className="px-4 py-3 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 touch-manipulation"
+                  >
+                    {copiedId === selectedPrompt.id ? (
+                      <Check className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-slate-600" />
+                    )}
+                    <span className="text-sm font-medium">
+                      {copiedId === selectedPrompt.id ? '복사됨' : '복사'}
+                    </span>
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => deletePrompt(selectedPrompt.id)}
+                    className="px-4 py-3 rounded-lg bg-white border border-red-300 hover:bg-red-50 transition-colors flex items-center justify-center touch-manipulation"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <FloatingMenu />
 
